@@ -1,0 +1,1210 @@
+{
+    "name": "4b68774c-5121-4e7e-84a1-e5fe0f1bbfd1",
+    "id": "/providers/Microsoft.Flow/flows/4b68774c-5121-4e7e-84a1-e5fe0f1bbfd1",
+    "type": "Microsoft.Flow/flows",
+    "properties": {
+        "apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+        "displayName": "Fluxo de abertura de demanda (Núcleo de Produção)",
+        "definition": {
+            "metadata": {
+                "workflowEntityId": null,
+                "processAdvisorMetadata": null,
+                "flowChargedByPaygo": null,
+                "flowclientsuspensionreason": "None",
+                "flowclientsuspensiontime": null,
+                "flowclientsuspensionreasondetails": null,
+                "creator": {
+                    "id": "aa17a500-35c0-45ae-b133-dd047f4ea2de",
+                    "type": "User",
+                    "tenantId": "57b8c96e-ac2f-4d78-a149-f1fc6817d3c4"
+                },
+                "provisioningMethod": "FromDefinition",
+                "failureAlertSubscription": true,
+                "clientLastModifiedTime": "2025-09-19T14:44:44.5410544Z",
+                "connectionKeySavedTimeKey": "2025-09-19T14:44:44.5410544Z",
+                "creationSource": null,
+                "modifiedSources": "Portal"
+            },
+            "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "$authentication": {
+                    "defaultValue": {},
+                    "type": "SecureObject"
+                },
+                "$connections": {
+                    "defaultValue": {},
+                    "type": "Object"
+                }
+            },
+            "triggers": {
+                "Quando_uma_nova_demanda_é_enviada": {
+                    "splitOn": "@triggerOutputs()?['body/value']",
+                    "type": "OpenApiConnectionWebhook",
+                    "inputs": {
+                        "parameters": {
+                            "form_id": "bsm4Vy-seE2hSfH8aBfTxCZCm_hAzDtJtIn3irzAO-BUMFQxN1hTRkI1WTZGN1hQWUQ4RldHUlk2TCQlQCN0PWcu"
+                        },
+                        "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                            "connectionName": "shared_microsoftforms",
+                            "operationId": "CreateFormWebhook"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Objetivo: Este gatilho inicia o fluxo automaticamente sempre que uma nova demanda é preenchida e enviada através do formulário.\n\nParâmetros: \n* ID do formulário: Especifica qual será o formulário que vai ser utilizado para a aplicação do fluxo.\n\n"
+                }
+            },
+            "actions": {
+                "Captura_Detalhes_da_Demanda": {
+                    "runAfter": {},
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                        "parameters": {
+                            "form_id": "bsm4Vy-seE2hSfH8aBfTxCZCm_hAzDtJtIn3irzAO-BUMFQxN1hTRkI1WTZGN1hQWUQ4RldHUlk2TCQlQCN0PWcu",
+                            "response_id": "@triggerOutputs()?['body/resourceData/responseId']"
+                        },
+                        "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                            "connectionName": "shared_microsoftforms",
+                            "operationId": "GetFormResponseById"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Objetivo: Captura todas as informações fornecidas pelo usuário no formulário, incluindo suas respostas e metadados (data, hora e etc.).\n\nParâmetros: Utiliza o ID único de cada resposta para acessar os dados corretos e o formato da saída é em JSON."
+                },
+                "Obter_perfil_do_usuário": {
+                    "runAfter": {
+                        "Captura_Detalhes_da_Demanda": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                        "parameters": {
+                            "id": "@outputs('Captura_Detalhes_da_Demanda')?['body/responder']"
+                        },
+                        "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users",
+                            "connectionName": "shared_office365users",
+                            "operationId": "UserProfile_V2"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Objetivo: Encontra informações detalhadas sobre o usuário que respondeu ao formulário, como nome completo, email, departamento e etc.\n\nIdentificador do Usuário: Pega o email (Obtido na resposta do usuário) para buscar seu perfil na Azure Active Directory."
+                },
+                "Criar_item": {
+                    "runAfter": {
+                        "Obter_perfil_do_usuário": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                        "parameters": {
+                            "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                            "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                            "view": "c2fdbe5e-40d1-4440-bf0f-ab3e5431e130",
+                            "item/T_x00ed_tulo": "ID: @{triggerOutputs()?['body/resourceData/responseId']} - Tipo da Demanda: @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} ",
+                            "item/EmaildoSolicitante/Claims": "@outputs('Captura_Detalhes_da_Demanda')?['body/responder']",
+                            "item/GrupodaDemanda": "@outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']",
+                            "item/TipodaDemanda": "@outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']",
+                            "item/Status/Value": "Em Análise"
+                        },
+                        "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "PostItem"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                    }
+                },
+                "Condição": {
+                    "actions": {
+                        "Criar_uma_tarefa": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                    "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                    "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']}- @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                    "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                    "body/appliedCategories/category20": true
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                    "connectionName": "shared_planner",
+                                    "operationId": "CreateTask_V3"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Obter_detalhes_da_tarefa_1": {
+                            "runAfter": {
+                                "Criar_uma_tarefa": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "id": "@outputs('Criar_uma_tarefa')?['body/id']"
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                    "connectionName": "shared_planner",
+                                    "operationId": "GetTaskDetails_V2"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Atualizar_item_1": {
+                            "runAfter": {
+                                "Obter_detalhes_da_tarefa_1": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                    "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                    "id": "@outputs('Criar_item')?['body/ID']",
+                                    "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                    "item/Status/Value": "Em Análise",
+                                    "item/IDPlanner": "@outputs('Criar_uma_tarefa')?['body/id']"
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "PatchItem"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Atualizar_detalhes_da_tarefa": {
+                            "runAfter": {
+                                "Atualizar_item_1": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "id": "@outputs('Criar_uma_tarefa')?['body/id']",
+                                    "body/description": "\n 📌 Detalhes da Demanda\n-------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n------------------------------------------------------------------------------------------------\n 1️⃣ Coleta dos Dados: @{outputs('Captura_Detalhes_da_Demanda')?['body/rea52f05797224673b220fc0a9712b5a6']}\n\n 2️⃣ Métricas e Filtros: @{outputs('Captura_Detalhes_da_Demanda')?['body/rd5147744d77c4f9fa179ee31c6895503']}\n\n 3️⃣ Mailing de Recebimento: @{outputs('Captura_Detalhes_da_Demanda')?['body/r8487f9ed018446af90c64d5c26510f8a']}\n\n 4️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/r9366b2b2c5034d85b2d3470ff6627c64']}\n\n 5️⃣ Prioridade: @{outputs('Captura_Detalhes_da_Demanda')?['body/r9ecf3498b3604cd3a89d5b7c756e3539']}\n\n⏬ Os campos abaixo serão preenchidos caso o usuário determine prioridade=\"Alta\"⏬\n\n               🔹 Qual é o impacto dessa demanda no negócio: @{outputs('Captura_Detalhes_da_Demanda')?['body/r09ba2af6d44c46f6af79632d3528b8d7']}\n\n               🔹 A demanda está vinculada à algum projeto crítico: @{outputs('Captura_Detalhes_da_Demanda')?['body/r887687b1fafb4cfa9cbe6badbdb06c18']}\n\n               🔹 Nível do impacto caso a demanda não seja atendida: @{outputs('Captura_Detalhes_da_Demanda')?['body/r72bb8fd2dad4464697e19ee924bfe213']}\n\n               🔹 Quais são esses impactos: @{outputs('Captura_Detalhes_da_Demanda')?['body/ra7a6dff2e1314277a0826df3ba42ab66']}"
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                    "connectionName": "shared_planner",
+                                    "operationId": "UpdateTaskDetails_V2"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Enviar_um_email_(V2)": {
+                            "runAfter": {
+                                "Postar_cartão_em_um_chat_ou_canal": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                    "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                    "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/r9366b2b2c5034d85b2d3470ff6627c64'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                    "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                    "emailMessage/Importance": "Normal"
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                    "connectionName": "shared_office365",
+                                    "operationId": "SendEmailV2"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        },
+                        "Postar_cartão_em_um_chat_ou_canal": {
+                            "runAfter": {
+                                "Atualizar_detalhes_da_tarefa": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                                "parameters": {
+                                    "poster": "Flow bot",
+                                    "location": "Group chat",
+                                    "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                    "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          },\n          {\n            \"title\": \"Prioridade:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/r9ecf3498b3604cd3a89d5b7c756e3539']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                },
+                                "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                    "connectionName": "shared_teams",
+                                    "operationId": "PostCardToConversation"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                            }
+                        }
+                    },
+                    "runAfter": {
+                        "Criar_item": [
+                            "Succeeded"
+                        ]
+                    },
+                    "else": {
+                        "actions": {
+                            "Condição_1": {
+                                "actions": {
+                                    "Criar_uma_tarefa_1": {
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                "body/title": "@{triggerOutputs()?['body/resourceData/responseId']}-@{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                                "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                                "body/appliedCategories/category20": true
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                "connectionName": "shared_planner",
+                                                "operationId": "CreateTask_V3"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    },
+                                    "Obter_detalhes_da_tarefa_2": {
+                                        "runAfter": {
+                                            "Criar_uma_tarefa_1": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "id": "@outputs('Criar_uma_tarefa_1')?['body/id']"
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                "connectionName": "shared_planner",
+                                                "operationId": "GetTaskDetails_V2"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    },
+                                    "Atualizar_item_2": {
+                                        "runAfter": {
+                                            "Obter_detalhes_da_tarefa_2": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                "id": "@outputs('Criar_item')?['body/ID']",
+                                                "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                "item/Status/Value": "Em Análise",
+                                                "item/IDPlanner": "@outputs('Criar_uma_tarefa_1')?['body/id']"
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                "connectionName": "shared_sharepointonline",
+                                                "operationId": "PatchItem"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    },
+                                    "Atualizar_detalhes_da_tarefa_1": {
+                                        "runAfter": {
+                                            "Atualizar_item_2": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "id": "@outputs('Criar_uma_tarefa_1')?['body/id']",
+                                                "body/description": " 📌 Detalhes da Demanda\n------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n------------------------------------------------------------------------------------------------\n1️⃣ Nome do Dashboard: @{outputs('Captura_Detalhes_da_Demanda')?['body/r0ef530ef5d34441c8193842bced6e4fa']}\n\n2️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/r9701e89eda7f47dc9e02ce217a9f8b50']}\n\n3️⃣ Prioridade: @{outputs('Captura_Detalhes_da_Demanda')?['body/re569718b479a42b395699be8ba5732cb']}\n\n⏬ Os campos abaixo serão preenchidos caso o usuário determine prioridade=\"Alta\"⏬\n\n               🔹 Qual é o impacto dessa demanda no negócio: @{outputs('Captura_Detalhes_da_Demanda')?['body/r6939d85de1df49a19d0d74ec2bec3ec4']}\n\n               🔹 A demanda está vinculada à algum projeto crítico: @{outputs('Captura_Detalhes_da_Demanda')?['body/r83b45a2110414fe9a9f429ddeecae6b5']}\n\n               🔹 Nível do impacto caso a demanda não seja atendida: @{outputs('Captura_Detalhes_da_Demanda')?['body/r352c2e95adca4f8c9d16f281e21c93e3']}\n\n               🔹 Quais são esses impactos: @{outputs('Captura_Detalhes_da_Demanda')?['body/r81ecd979f08b465cb0f82f2bcc82c898']}"
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                "connectionName": "shared_planner",
+                                                "operationId": "UpdateTaskDetails_V2"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    },
+                                    "Enviar_um_email_(V2)_1": {
+                                        "runAfter": {
+                                            "Postar_cartão_em_um_chat_ou_canal_1": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n      \n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_1')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/r9701e89eda7f47dc9e02ce217a9f8b50'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                "emailMessage/Importance": "Normal"
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                "connectionName": "shared_office365",
+                                                "operationId": "SendEmailV2"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    },
+                                    "Postar_cartão_em_um_chat_ou_canal_1": {
+                                        "runAfter": {
+                                            "Atualizar_detalhes_da_tarefa_1": [
+                                                "Succeeded"
+                                            ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                            "parameters": {
+                                                "poster": "Flow bot",
+                                                "location": "Group chat",
+                                                "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          },\n          {\n            \"title\": \"Prioridade:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/re569718b479a42b395699be8ba5732cb']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                            },
+                                            "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                "connectionName": "shared_teams",
+                                                "operationId": "PostCardToConversation"
+                                            },
+                                            "authentication": "@parameters('$authentication')"
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Condição_2": {
+                                            "actions": {
+                                                "Criar_uma_tarefa_2": {
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                            "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                            "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                                            "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                                            "body/appliedCategories/category20": true
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                            "connectionName": "shared_planner",
+                                                            "operationId": "CreateTask_V3"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                },
+                                                "Obter_detalhes_da_tarefa_3": {
+                                                    "runAfter": {
+                                                        "Criar_uma_tarefa_2": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "id": "@outputs('Criar_uma_tarefa_2')?['body/id']"
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                            "connectionName": "shared_planner",
+                                                            "operationId": "GetTaskDetails_V2"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                },
+                                                "Atualizar_item_3": {
+                                                    "runAfter": {
+                                                        "Obter_detalhes_da_tarefa_3": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                            "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                            "id": "@outputs('Criar_item')?['body/ID']",
+                                                            "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                            "item/Status/Value": "Em Análise",
+                                                            "item/IDPlanner": "@outputs('Criar_uma_tarefa_2')?['body/id']"
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                            "connectionName": "shared_sharepointonline",
+                                                            "operationId": "PatchItem"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                },
+                                                "Atualizar_detalhes_da_tarefa_2": {
+                                                    "runAfter": {
+                                                        "Atualizar_item_3": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "id": "@outputs('Criar_uma_tarefa_2')?['body/id']",
+                                                            "body/description": " 📌 Detalhes da Demanda\n------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n------------------------------------------------------------------------------------------------\n1️⃣ Nome do Dashboard: @{outputs('Captura_Detalhes_da_Demanda')?['body/read16c6b4095459ba2f855ba7bfd1ac3']}\n\n2️⃣ Tipo da Inconsistência: @{outputs('Captura_Detalhes_da_Demanda')?['body/re9ac4a90550d4d41ae58c0d199a7e8ce']}\n\n3️⃣ Possui algum arquivo de exemplo: @{outputs('Captura_Detalhes_da_Demanda')?['body/rbaaae0d46d074d548c8b6b5e39bcf411']}\n\nLink para acessar arquivo: https://timbrasil.sharepoint.com/:f:/r/teams/Teams_1a1692c965ab496489dc9a9eed98afb9/Documentos%20Compartilhados/Aplicativos/Microsoft%20Forms/Central%20de%20Demandas%20MIS%20%F0%9F%92%A1%F0%9F%93%8A/Pergunta?csf=1&web=1&e=MdZjOJ\n\n4️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/r8a70c01af0f245779d33fbaeed7b1f9c']}\n\n5️⃣ Prioridade: @{outputs('Captura_Detalhes_da_Demanda')?['body/r797648a5152a4006947b1ecbe9514326']}\n\n⏬ Os campos abaixo serão preenchidos caso o usuário determine prioridade=\"Alta\"⏬\n\n               🔹 Qual é o impacto dessa demanda no negócio: @{outputs('Captura_Detalhes_da_Demanda')?['body/r1b0cf0968d79418f974751df9f9adea6']}\n\n               🔹 A demanda está vinculada à algum projeto crítico: @{outputs('Captura_Detalhes_da_Demanda')?['body/r20376ba1ece14bd48702dd1a43ff0e49']}\n\n               🔹 Nível do impacto caso a demanda não seja atendida: @{outputs('Captura_Detalhes_da_Demanda')?['body/r77afdeb270a4403796c999a3bec005a7']}\n\n               🔹 Quais são esses impactos: @{outputs('Captura_Detalhes_da_Demanda')?['body/r8ea8f0dee4874beebe4d18143cd4dc8f']}"
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                            "connectionName": "shared_planner",
+                                                            "operationId": "UpdateTaskDetails_V2"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                },
+                                                "Enviar_um_email_(V2)_2": {
+                                                    "runAfter": {
+                                                        "Postar_cartão_em_um_chat_ou_canal_2": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                            "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                            "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_2')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/r8a70c01af0f245779d33fbaeed7b1f9c'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                            "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                            "emailMessage/Importance": "Normal"
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                            "connectionName": "shared_office365",
+                                                            "operationId": "SendEmailV2"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                },
+                                                "Postar_cartão_em_um_chat_ou_canal_2": {
+                                                    "runAfter": {
+                                                        "Atualizar_detalhes_da_tarefa_2": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "OpenApiConnection",
+                                                    "inputs": {
+                                                        "parameters": {
+                                                            "poster": "Flow bot",
+                                                            "location": "Group chat",
+                                                            "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                            "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}🚨❌\"\n          },\n          {\n            \"title\": \"Prioridade:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/r797648a5152a4006947b1ecbe9514326']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                                        },
+                                                        "host": {
+                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                            "connectionName": "shared_teams",
+                                                            "operationId": "PostCardToConversation"
+                                                        },
+                                                        "authentication": "@parameters('$authentication')"
+                                                    }
+                                                }
+                                            },
+                                            "else": {
+                                                "actions": {
+                                                    "Condição_3": {
+                                                        "actions": {
+                                                            "Criar_uma_tarefa_3": {
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                                        "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                                        "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                                                        "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                                                        "body/appliedCategories/category20": true
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                        "connectionName": "shared_planner",
+                                                                        "operationId": "CreateTask_V3"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            },
+                                                            "Obter_detalhes_da_tarefa_4": {
+                                                                "runAfter": {
+                                                                    "Criar_uma_tarefa_3": [
+                                                                        "Succeeded"
+                                                                    ]
+                                                                },
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "id": "@outputs('Criar_uma_tarefa_3')?['body/id']"
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                        "connectionName": "shared_planner",
+                                                                        "operationId": "GetTaskDetails_V2"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            },
+                                                            "Atualizar_item_4": {
+                                                                "runAfter": {
+                                                                    "Obter_detalhes_da_tarefa_4": [
+                                                                        "Succeeded"
+                                                                    ]
+                                                                },
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                                        "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                                        "id": "@outputs('Criar_item')?['body/ID']",
+                                                                        "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                                        "item/Status/Value": "Em Análise",
+                                                                        "item/IDPlanner": "@outputs('Criar_uma_tarefa_3')?['body/id']"
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                                        "connectionName": "shared_sharepointonline",
+                                                                        "operationId": "PatchItem"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            },
+                                                            "Atualizar_detalhes_da_tarefa_3": {
+                                                                "runAfter": {
+                                                                    "Atualizar_item_4": [
+                                                                        "Succeeded"
+                                                                    ]
+                                                                },
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "id": "@outputs('Criar_uma_tarefa_3')?['body/id']",
+                                                                        "body/description": " 📌 Detalhes da Demanda\n------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n------------------------------------------------------------------------------------------------\n1️⃣ Descrição Detalhada:: @{outputs('Captura_Detalhes_da_Demanda')?['body/r098549f8c5f6410f914168cc697f0ed5']}\n\n2️⃣ Período de Tempo: @{outputs('Captura_Detalhes_da_Demanda')?['body/re18780eac7394ea0a331be8b24be562b']}\n\n3️⃣Filtros que devem ser aplicados: @{outputs('Captura_Detalhes_da_Demanda')?['body/r68b74f0db9f34a49bf48df197b5a514e']}\n\n4️⃣ Prioridade: @{outputs('Captura_Detalhes_da_Demanda')?['body/r15a80b7e0fba4311bbcac71cbdc6c09f']}\n\n⏬ Os campos abaixo serão preenchidos caso o usuário determine prioridade=\"Alta\"⏬\n\n               🔹 Qual é o impacto dessa demanda no negócio: @{outputs('Captura_Detalhes_da_Demanda')?['body/r73b2648a4c844a728a76cc5fc9703d57']}\n\n               🔹 A demanda está vinculada à algum projeto crítico: @{outputs('Captura_Detalhes_da_Demanda')?['body/rb049f78e1d574b118eb596c536b0d688']}\n\n               🔹 Nível do impacto caso a demanda não seja atendida: @{outputs('Captura_Detalhes_da_Demanda')?['body/r16be87ada6664638b4f2c04a9ab5e726']}\n\n               🔹 Quais são esses impactos: @{outputs('Captura_Detalhes_da_Demanda')?['body/r9d8936d0f93440c38f4296270aeb793e']}"
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                        "connectionName": "shared_planner",
+                                                                        "operationId": "UpdateTaskDetails_V2"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            },
+                                                            "Enviar_um_email_(V2)_3": {
+                                                                "runAfter": {
+                                                                    "Postar_cartão_em_um_chat_ou_canal_3": [
+                                                                        "Succeeded"
+                                                                    ]
+                                                                },
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                                        "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                                        "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_3')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/r098549f8c5f6410f914168cc697f0ed5'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                                        "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                                        "emailMessage/Importance": "Normal"
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                                        "connectionName": "shared_office365",
+                                                                        "operationId": "SendEmailV2"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            },
+                                                            "Postar_cartão_em_um_chat_ou_canal_3": {
+                                                                "runAfter": {
+                                                                    "Atualizar_detalhes_da_tarefa_3": [
+                                                                        "Succeeded"
+                                                                    ]
+                                                                },
+                                                                "type": "OpenApiConnection",
+                                                                "inputs": {
+                                                                    "parameters": {
+                                                                        "poster": "Flow bot",
+                                                                        "location": "Group chat",
+                                                                        "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                                        "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          },\n          {\n            \"title\": \"Prioridade:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/r15a80b7e0fba4311bbcac71cbdc6c09f']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                                                    },
+                                                                    "host": {
+                                                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                                        "connectionName": "shared_teams",
+                                                                        "operationId": "PostCardToConversation"
+                                                                    },
+                                                                    "authentication": "@parameters('$authentication')"
+                                                                }
+                                                            }
+                                                        },
+                                                        "else": {
+                                                            "actions": {
+                                                                "Condição_4": {
+                                                                    "actions": {
+                                                                        "Criar_uma_tarefa_4": {
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                                                    "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                                                    "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                                                                    "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                                                                    "body/appliedCategories/category20": true
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                    "connectionName": "shared_planner",
+                                                                                    "operationId": "CreateTask_V3"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        },
+                                                                        "Obter_detalhes_da_tarefa_5": {
+                                                                            "runAfter": {
+                                                                                "Criar_uma_tarefa_4": [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "id": "@outputs('Criar_uma_tarefa_4')?['body/id']"
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                    "connectionName": "shared_planner",
+                                                                                    "operationId": "GetTaskDetails_V2"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        },
+                                                                        "Atualizar_item_5": {
+                                                                            "runAfter": {
+                                                                                "Obter_detalhes_da_tarefa_5": [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                                                    "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                                                    "id": "@outputs('Criar_item')?['body/ID']",
+                                                                                    "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                                                    "item/Status/Value": "Em Análise",
+                                                                                    "item/IDPlanner": "@outputs('Criar_uma_tarefa_4')?['body/id']"
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                                                    "connectionName": "shared_sharepointonline",
+                                                                                    "operationId": "PatchItem"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        },
+                                                                        "Atualizar_detalhes_da_tarefa_4": {
+                                                                            "runAfter": {
+                                                                                "Atualizar_item_5": [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "id": "@outputs('Criar_uma_tarefa_4')?['body/id']",
+                                                                                    "body/description": " 📌 Detalhes da Demanda\n------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n------------------------------------------------------------------------------------------------\n1️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/rc6150b0d1dc74453a39c701a223c85b4']}\n\n2️⃣ Perguntas que devem ser respondidas: @{outputs('Captura_Detalhes_da_Demanda')?['body/r2c7654a6c54b4a81964431fb8b0fd275']}\n\n3️⃣ Métricas que devem ser consideradas: @{outputs('Captura_Detalhes_da_Demanda')?['body/r6fd5738ad42b4420afaa2797bfecba3b']}\n\n4️⃣ Prioridade: @{outputs('Captura_Detalhes_da_Demanda')?['body/rf74a30989a5d447685d7bb0052aaef1a']}\n\n⏬ Os campos abaixo serão preenchidos caso o usuário determine prioridade = \"Alta\"⏬\n\n               🔹 Qual é o impacto dessa demanda no negócio: @{outputs('Captura_Detalhes_da_Demanda')?['body/rcf99d7e474e049c1af2435ae8ca863f5']}\n\n               🔹 A demanda está vinculada à algum projeto crítico: @{outputs('Captura_Detalhes_da_Demanda')?['body/r887687b1fafb4cfa9cbe6badbdb06c18']}\n\n               🔹 Nível do impacto caso a demanda não seja atendida: @{outputs('Captura_Detalhes_da_Demanda')?['body/rde866522e7724999a3f81c880fc270da']}\n\n               🔹 Quais são esses impactos: @{outputs('Captura_Detalhes_da_Demanda')?['body/reb9be7f5dba14a1f9bec8ce3dba6dc36']}"
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                    "connectionName": "shared_planner",
+                                                                                    "operationId": "UpdateTaskDetails_V2"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        },
+                                                                        "Enviar_um_email_(V2)_4": {
+                                                                            "runAfter": {
+                                                                                "Postar_cartão_em_um_chat_ou_canal_4": [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                                                    "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                                                    "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_4')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/rc6150b0d1dc74453a39c701a223c85b4'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                                                    "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                                                    "emailMessage/Importance": "Normal"
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                                                    "connectionName": "shared_office365",
+                                                                                    "operationId": "SendEmailV2"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        },
+                                                                        "Postar_cartão_em_um_chat_ou_canal_4": {
+                                                                            "runAfter": {
+                                                                                "Atualizar_detalhes_da_tarefa_4": [
+                                                                                    "Succeeded"
+                                                                                ]
+                                                                            },
+                                                                            "type": "OpenApiConnection",
+                                                                            "inputs": {
+                                                                                "parameters": {
+                                                                                    "poster": "Flow bot",
+                                                                                    "location": "Group chat",
+                                                                                    "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                                                    "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          },\n          {\n            \"title\": \"Prioridade:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rf74a30989a5d447685d7bb0052aaef1a']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                                                                },
+                                                                                "host": {
+                                                                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                                                    "connectionName": "shared_teams",
+                                                                                    "operationId": "PostCardToConversation"
+                                                                                },
+                                                                                "authentication": "@parameters('$authentication')"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "else": {
+                                                                        "actions": {
+                                                                            "Condição_5": {
+                                                                                "actions": {
+                                                                                    "Criar_uma_tarefa_5": {
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                                                                "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                                                                "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}",
+                                                                                                "body/bucketId": "yprSTXuP80KRhX02a1B_p2QAElq3",
+                                                                                                "body/appliedCategories/category20": true
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                "connectionName": "shared_planner",
+                                                                                                "operationId": "CreateTask_V3"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    },
+                                                                                    "Obter_detalhes_da_tarefa_6": {
+                                                                                        "runAfter": {
+                                                                                            "Criar_uma_tarefa_5": [
+                                                                                                "Succeeded"
+                                                                                            ]
+                                                                                        },
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "id": "@outputs('Criar_uma_tarefa_5')?['body/id']"
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                "connectionName": "shared_planner",
+                                                                                                "operationId": "GetTaskDetails_V2"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    },
+                                                                                    "Atualizar_item_6": {
+                                                                                        "runAfter": {
+                                                                                            "Obter_detalhes_da_tarefa_6": [
+                                                                                                "Succeeded"
+                                                                                            ]
+                                                                                        },
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                                                                "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                                                                "id": "@outputs('Criar_item')?['body/ID']",
+                                                                                                "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                                                                "item/Status/Value": "Em Análise",
+                                                                                                "item/IDPlanner": "@outputs('Criar_uma_tarefa_5')?['body/id']"
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                                                                "connectionName": "shared_sharepointonline",
+                                                                                                "operationId": "PatchItem"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    },
+                                                                                    "Atualizar_detalhes_da_tarefa_5": {
+                                                                                        "runAfter": {
+                                                                                            "Atualizar_item_6": [
+                                                                                                "Succeeded"
+                                                                                            ]
+                                                                                        },
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "id": "@outputs('Criar_uma_tarefa_5')?['body/id']",
+                                                                                                "body/description": " 📌 Detalhes da Demanda\n-------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n-------------------------------------------------------------------------------------------------\nDemanda: Solicitação de Acesso ao Banco BDS 📊;\n1️⃣ Matrícula do Usuário: @{outputs('Captura_Detalhes_da_Demanda')?['body/rc854b9ad0a7f462ca0893cab8c686568']}\n\n2️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/re171acbd2c2046f68c9e1413349eca65']}\n\n3️⃣ Quais visualizações ele necessita: ; @{outputs('Captura_Detalhes_da_Demanda')?['body/r897d047442584ebdaeb7c2c040f42fe9']}"
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                "connectionName": "shared_planner",
+                                                                                                "operationId": "UpdateTaskDetails_V2"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    },
+                                                                                    "Enviar_um_email_(V2)_5": {
+                                                                                        "runAfter": {
+                                                                                            "Postar_cartão_em_um_chat_ou_canal_5": [
+                                                                                                "Succeeded"
+                                                                                            ]
+                                                                                        },
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                                                                "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                                                                "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_5')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/re171acbd2c2046f68c9e1413349eca65'], 0, 60)}\n\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                                                                "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                                                                "emailMessage/Importance": "Normal"
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                                                                "connectionName": "shared_office365",
+                                                                                                "operationId": "SendEmailV2"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    },
+                                                                                    "Postar_cartão_em_um_chat_ou_canal_5": {
+                                                                                        "runAfter": {
+                                                                                            "Atualizar_detalhes_da_tarefa_5": [
+                                                                                                "Succeeded"
+                                                                                            ]
+                                                                                        },
+                                                                                        "type": "OpenApiConnection",
+                                                                                        "inputs": {
+                                                                                            "parameters": {
+                                                                                                "poster": "Flow bot",
+                                                                                                "location": "Group chat",
+                                                                                                "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                                                                "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                                                                            },
+                                                                                            "host": {
+                                                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                                                                "connectionName": "shared_teams",
+                                                                                                "operationId": "PostCardToConversation"
+                                                                                            },
+                                                                                            "authentication": "@parameters('$authentication')"
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                "else": {
+                                                                                    "actions": {
+                                                                                        "Condição_6": {
+                                                                                            "actions": {
+                                                                                                "Criar_uma_tarefa_6": {
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "body/groupId": "f89b4226-cc40-493b-b489-f78abcc03be0",
+                                                                                                            "body/planId": "SElh4-Z0t0OPAr0cldLW0WQAD_6x",
+                                                                                                            "body/title": "@{triggerOutputs()?['body/resourceData/responseId']} - @{outputs('Obter_perfil_do_usuário')?['body/displayName']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']} - @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                            "connectionName": "shared_planner",
+                                                                                                            "operationId": "CreateTask_V3"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                },
+                                                                                                "Obter_detalhes_da_tarefa": {
+                                                                                                    "runAfter": {
+                                                                                                        "Criar_uma_tarefa_6": [
+                                                                                                            "Succeeded"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "id": "@outputs('Criar_uma_tarefa_6')?['body/id']"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                            "connectionName": "shared_planner",
+                                                                                                            "operationId": "GetTaskDetails_V2"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                },
+                                                                                                "Atualizar_item": {
+                                                                                                    "runAfter": {
+                                                                                                        "Obter_detalhes_da_tarefa": [
+                                                                                                            "Succeeded"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "dataset": "https://timbrasil.sharepoint.com/teams/Teams_1a1692c965ab496489dc9a9eed98afb9",
+                                                                                                            "table": "b71d5054-d93d-44d7-a120-3801dc29a5db",
+                                                                                                            "id": "@outputs('Criar_item')?['body/ID']",
+                                                                                                            "item/T_x00ed_tulo": "@outputs('Criar_item')?['body/T_x00ed_tulo']",
+                                                                                                            "item/Status/Value": "Em Análise",
+                                                                                                            "item/IDPlanner": "@outputs('Criar_uma_tarefa_6')?['body/id']"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                                                                            "connectionName": "shared_sharepointonline",
+                                                                                                            "operationId": "PatchItem"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                },
+                                                                                                "Atualizar_detalhes_da_tarefa_6": {
+                                                                                                    "runAfter": {
+                                                                                                        "Atualizar_item": [
+                                                                                                            "Succeeded"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "id": "@outputs('Criar_uma_tarefa_6')?['body/id']",
+                                                                                                            "body/description": " 📌 Detalhes da Demanda\n-------------------------------------------------------------------------------------------------\n📋 Informações Gerais\n--- 📅 Data da Solicitação: @{outputs('Captura_Detalhes_da_Demanda')?['body/submitDate']}\n\n--- 🧑🏻 Nome do Solicitante: @{outputs('Obter_perfil_do_usuário')?['body/displayName']}\n\n--- 📧 Email do Solicitante: @{outputs('Captura_Detalhes_da_Demanda')?['body/responder']}\n-------------------------------------------------------------------------------------------------\nDemanda: Criação de ETLs 📊;\n1️⃣ Descrição Detalhada: @{outputs('Captura_Detalhes_da_Demanda')?['body/rb7346fda18934a2da49ff383d23db579']}\n\n2️⃣ Qual a origem dos dados: @{outputs('Captura_Detalhes_da_Demanda')?['body/refa2a292b10744e29490fce14dfb08dc']}\n\n3️⃣ Qual o nome da base de dados: @{outputs('Captura_Detalhes_da_Demanda')?['body/r4e5c30a9b1f44852978d6065f8c436e2']}\n\n4️⃣ Quais são os tipos de tratamentos ou transformações devem ser realizados: @{outputs('Captura_Detalhes_da_Demanda')?['body/rbdd4359eef72469e86e1835159c431ad']}\n\n5️⃣ Para onde os dados devem ser enviados: @{outputs('Captura_Detalhes_da_Demanda')?['body/rc86c0e762ec348e7991747d6062f864c']}\n\n6️⃣ Qual o nome da tabela/arquivo de destino dos dados: @{outputs('Captura_Detalhes_da_Demanda')?['body/ra2578202eb3042e4b711fad3bf604e9e']}\n\n7️⃣ O destino final dos dados já existe ou precisa ser criado: @{outputs('Captura_Detalhes_da_Demanda')?['body/re502d3b47b404b8985d1e4b0e1ce0199']}\n\n8️⃣ Qual a frequência desejada para execução da ETL: @{outputs('Captura_Detalhes_da_Demanda')?['body/ra6076ee07db04934a6526cc30b029dc8']}\n\n9️⃣ Existe uma janela de horário específica para execução: @{outputs('Captura_Detalhes_da_Demanda')?['body/r494d5633d98644778dec502de3d4cb6c']}"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                                                                                                            "connectionName": "shared_planner",
+                                                                                                            "operationId": "UpdateTaskDetails_V2"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                },
+                                                                                                "Postar_cartão_em_um_chat_ou_canal_6": {
+                                                                                                    "runAfter": {
+                                                                                                        "Atualizar_detalhes_da_tarefa_6": [
+                                                                                                            "Succeeded"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "poster": "Flow bot",
+                                                                                                            "location": "Group chat",
+                                                                                                            "body/recipient": "19:7e49936d70f14b0584d8dbb37b2df440@thread.v2",
+                                                                                                            "body/messageBody": "{\n    \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n    \"type\": \"AdaptiveCard\",\n    \"version\": \"1.4\",\n    \"body\": [\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Informativo de Nova Requisição\",\n        \"size\": \"Large\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\"\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Olá! Equipe MIS\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \" 🚨 Uma Nova Demanda foi Registrada 🚨\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Attention\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Uma nova solicitação chegou e já está na fila de triagem.\\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"ID da Solicitação\",\n            \"value\": \"@{triggerOutputs()?['body/resourceData/responseId']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Resumo da Solicitação\",\n        \"size\": \"Medium\",\n        \"weight\": \"Bolder\",\n        \"color\": \"Accent\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"TextBlock\",\n        \"text\": \"Principais detalhes registrados no sistema:\",\n        \"wrap\": true\n      },\n      {\n        \"type\": \"FactSet\",\n        \"facts\": [\n          {\n            \"title\": \"Nome do Solicitante:\",\n            \"value\": \"@{outputs('Obter_perfil_do_usuário')?['body/displayName']}\"\n          },\n          {\n            \"title\": \"Grupo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\"\n          },\n          {\n            \"title\": \"Tipo da Demanda:\",\n            \"value\": \"@{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\"\n          }\n        ]\n      },\n      {\n        \"type\": \"ActionSet\",\n        \"actions\": [\n          {\n            \"type\": \"Action.OpenUrl\",\n            \"title\": \"Clique aqui para acessar a demanda via Planner\",\n            \"url\": \"https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4\"\n          }\n        ]\n      }\n    ]\n  }"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                                                                                                            "connectionName": "shared_teams",
+                                                                                                            "operationId": "PostCardToConversation"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                },
+                                                                                                "Enviar_um_email_(V2)_6": {
+                                                                                                    "runAfter": {
+                                                                                                        "Postar_cartão_em_um_chat_ou_canal_6": [
+                                                                                                            "Succeeded"
+                                                                                                        ]
+                                                                                                    },
+                                                                                                    "type": "OpenApiConnection",
+                                                                                                    "inputs": {
+                                                                                                        "parameters": {
+                                                                                                            "emailMessage/To": "@{outputs('Captura_Detalhes_da_Demanda')?['body/responder']} ",
+                                                                                                            "emailMessage/Subject": "Confirmação: Sua demanda foi recebida",
+                                                                                                            "emailMessage/Body": "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:595px !important; max-width:595px; background-color:#020922; border-collapse:collapse; font-family:Arial, sans-serif;\">\n\n  <!-- HEADER -->\n  <tbody><tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- TEXTO DE BOAS-VINDAS -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif;\">\n      Olá <strong><span style=\"color:#4bcfff;\">@{outputs('Obter_perfil_do_usuário')?['body/displayName']}</span></strong> sua solicitação já está na fila de triagem do \n      <span style=\"color:#4bcfff; font-style:italic;\">TIMe Polaris.</span> \n      Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.\n    </td>\n  </tr>\n\n  <!-- STATUS -->\n  <tr>\n    <td style=\"padding:30px; text-align:center;\">\n      <p style=\"color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family:Arial, sans-serif; line-height:35px; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">STATUS</span>\n\n      </p>\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png\" alt=\"Portal Polaris\" width=\"350\" style=\"display:block; width:350px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n  <!-- BLOCO DE ACOMPANHAMENTO -->\n  <tr>\n    <td style=\"padding:30px; background-color:#020922; text-align:center;\">\n      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:420px !important; background-color:#020922; border:1px solid #4bcfff;\">\n        <tbody><tr>\n          <td style=\"padding:20px; font-size:14px; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n            <p style=\"margin:0; padding:0;\">\n              <strong>Número de solicitação:@{triggerOutputs()?['body/resourceData/responseId']}</strong>\n            </p>\n            \n            <p>\n              <strong>Para acompanhá-la:</strong>\n            </p>\n            <a href=\"https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi\" style=\"display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width:160px; height:35px; line-height:35px; text-align:center;\">\n               CLIQUE AQUI\n            </a>\n          </td>\n        </tr>\n      </tbody></table>\n    </td>\n  </tr>\n\n  <!-- RESUMO DA DEMANDA -->\n  <tr>\n    <td style=\"padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color:#ffffff; font-family:Arial, sans-serif; text-align:center;\">\n      <p style=\"margin:0; text-align:center;\">\n        <span style=\"color:#ffffff; font-style:italic;\">RESUMO DA DEMANDA</span>\n\n      </p>\n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Grupo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/raacd157c5c594200a358a7ede75b1770']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Tipo de demanda:</strong> @{outputs('Captura_Detalhes_da_Demanda')?['body/rcff1b3111f4a46e582416c2e7811c209']}\n\n      </p>\n      \n\n\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Título:</strong> @{outputs('Criar_uma_tarefa_6')?['body/title']}\n      </p>\n      \n\n      <p style=\"margin:0; padding:0;\">\n        <strong>Descrição:</strong> @{substring(outputs('Captura_Detalhes_da_Demanda')?['body/rb7346fda18934a2da49ff383d23db579'], 0, 60)}\n      </p>\n\n    </td>\n  </tr>\n\n  <!-- RODAPÉ -->\n  <tr>\n    <td style=\"padding:7px;\">\n      <img src=\"https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png\" alt=\"Portal Polaris\" width=\"595\" style=\"display:block; width:595px !important; border:0; outline:none; text-decoration:none;\">\n    </td>\n  </tr>\n\n</tbody></table>",
+                                                                                                            "emailMessage/Cc": "@outputs('Captura_Detalhes_da_Demanda')?['body/r1084488db06c40ac89c713f130696f08']",
+                                                                                                            "emailMessage/Importance": "Normal"
+                                                                                                        },
+                                                                                                        "host": {
+                                                                                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                                                                                                            "connectionName": "shared_office365",
+                                                                                                            "operationId": "SendEmailV2"
+                                                                                                        },
+                                                                                                        "authentication": "@parameters('$authentication')"
+                                                                                                    }
+                                                                                                }
+                                                                                            },
+                                                                                            "else": {
+                                                                                                "actions": {}
+                                                                                            },
+                                                                                            "expression": {
+                                                                                                "and": [
+                                                                                                    {
+                                                                                                        "not": {
+                                                                                                            "equals": [
+                                                                                                                "@outputs('Captura_Detalhes_da_Demanda')?['body/rb7346fda18934a2da49ff383d23db579']",
+                                                                                                                ""
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    }
+                                                                                                ]
+                                                                                            },
+                                                                                            "type": "If"
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                "expression": {
+                                                                                    "and": [
+                                                                                        {
+                                                                                            "not": {
+                                                                                                "equals": [
+                                                                                                    "@outputs('Captura_Detalhes_da_Demanda')?['body/rc854b9ad0a7f462ca0893cab8c686568']",
+                                                                                                    ""
+                                                                                                ]
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "type": "If"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "expression": {
+                                                                        "and": [
+                                                                            {
+                                                                                "not": {
+                                                                                    "equals": [
+                                                                                        "@outputs('Captura_Detalhes_da_Demanda')?['body/rc6150b0d1dc74453a39c701a223c85b4']",
+                                                                                        ""
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "type": "If"
+                                                                }
+                                                            }
+                                                        },
+                                                        "expression": {
+                                                            "and": [
+                                                                {
+                                                                    "not": {
+                                                                        "equals": [
+                                                                            "@outputs('Captura_Detalhes_da_Demanda')?['body/r098549f8c5f6410f914168cc697f0ed5']",
+                                                                            ""
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        "type": "If"
+                                                    }
+                                                }
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "not": {
+                                                            "equals": [
+                                                                "@outputs('Captura_Detalhes_da_Demanda')?['body/read16c6b4095459ba2f855ba7bfd1ac3']",
+                                                                ""
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "type": "If"
+                                        }
+                                    }
+                                },
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "not": {
+                                                "equals": [
+                                                    "@outputs('Captura_Detalhes_da_Demanda')?['body/r0ef530ef5d34441c8193842bced6e4fa']",
+                                                    ""
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                "type": "If"
+                            }
+                        }
+                    },
+                    "expression": {
+                        "and": [
+                            {
+                                "not": {
+                                    "equals": [
+                                        "@outputs('Captura_Detalhes_da_Demanda')?['body/rea52f05797224673b220fc0a9712b5a6']",
+                                        ""
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "type": "If"
+                }
+            },
+            "outputs": {},
+            "description": ""
+        },
+        "connectionReferences": {
+            "shared_microsoftforms": {
+                "connectionName": "shared-microsoftform-ed2dbdbb-408c-457a-a799-b94b40757f11",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                "tier": "NotSpecified",
+                "apiName": "microsoftforms",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            },
+            "shared_office365users": {
+                "connectionName": "22526276c0b148eb8d196fe1e4bca9d6",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_office365users",
+                "tier": "NotSpecified",
+                "apiName": "office365users",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            },
+            "shared_sharepointonline": {
+                "connectionName": "shared-sharepointonl-c3122fda-92ae-4782-a32b-0a043f46ebfa",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                "tier": "NotSpecified",
+                "apiName": "sharepointonline",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            },
+            "shared_planner": {
+                "connectionName": "shared-planner-d4d79078-734f-4f1f-9abb-b34bfde5b3dc",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_planner",
+                "tier": "NotSpecified",
+                "apiName": "planner",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            },
+            "shared_office365": {
+                "connectionName": "shared-office365-d40d0ffc-d23c-4244-ad4a-1b245e6485fd",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                "tier": "NotSpecified",
+                "apiName": "office365",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            },
+            "shared_teams": {
+                "connectionName": "shared-teams-f5f0fd2a-5ee4-4960-a3df-38ed431e8a82",
+                "source": "Embedded",
+                "id": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                "tier": "NotSpecified",
+                "apiName": "teams",
+                "isProcessSimpleApiReferenceConversionAlreadyDone": false
+            }
+        },
+        "flowFailureAlertSubscribed": false,
+        "isManaged": false
+    }
+}
