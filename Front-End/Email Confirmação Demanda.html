@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal Polaris - Acompanhamento de Demanda</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0; padding:0; font-family: 'Roboto', Arial, sans-serif;">
+
+  <!-- TABELA PRINCIPAL -->
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="585" style=" background-color:#020922; border-collapse:collapse;">
+
+    <!-- HEADER -->
+    <tr>
+      <td align="center" colspan="2" style="padding:7px;">
+        <img src="https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Header.png" alt="Portal Polaris" width="595" style="display:block;">
+      </td>
+    </tr>
+
+    <!-- TEXTO DE BOAS-VINDAS -->
+    <tr>
+      <td colspan="2" align="center" style="padding:30px; background-color:#020922; font-size:14px; line-height:1.6; color: #ffffff;">
+        Olá <strong><span style="color:#4bcfff;">(nome da pessoa)</span></strong> sua solicitação já está na fila de triagem do <span style="color:#4bcfff; font-style:italic;">TIMe Polaris.</span> 
+        Agora é só aguardar que vamos informar quando começarmos a trabalhar na sua demanda.
+      </td>
+    </tr>
+
+    
+    <!-- STATUS -->
+    <tr>
+      <td align="center" colspan="2" style="padding:7px;">
+
+        <p style="color:#ffffff; font-size:14px; font-weight:bold; margin:0; font-family: 'Roboto', Arial, sans-serif; line-height:35px;"">
+        <span style="color:#ffffff; font-style:italic;">STATUS</span>
+        </p>
+
+        <img src="https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/status-01recebido.png" alt="Portal Polaris" width="350" style="display:block;">
+      </td>
+    </tr>
+
+    <!-- BLOCO DE ACOMPANHAMENTO -->
+    <tr>
+      <td colspan="2" align="center" style="padding:30px; background-color:#020922;">
+        <table border="0" cellspacing="0" cellpadding="0" width="70%" style="background-color:#020922; border:1px solid #4bcfff;">
+          <tr>
+            <td align="center" style="padding:20px; font-size:14px; color:#ffffff;">
+              <strong>Número de solicitação:</strong>@{triggerOutputs()?['body/resourceData/responseId']}<br><br>
+
+              <strong>Para acompanhá-la:<strong><br><br>
+              <a href="https://app.powerbi.com/groups/3892d8bd-ecd4-473b-980a-c3089e80a912/reports/5644ef1a-7180-4124-91aa-54dc9de3d3c7/4e20b34ead715887644a?experience=power-bi" style="display:inline-block; background-color:#4bcfff; color:#020922; text-decoration:none; font-weight:bold; border-radius:5px; width: 160px; height:35px; line-height: 35px; text-align: center;">CLIQUE AQUI</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- RESUMO DA DEMANDA -->
+    <tr>
+      <td colspan="2" align="center" style="padding:7px; background-color:#020922; font-size:14px; line-height:1.6; color: #ffffff;" >
+      
+        <p>
+          <span style="color:#ffffff; font-style:italic;">RESUMO DA DEMANDA</span><br>
+        </p>
+
+        <strong>Grupo de demanda:</strong> Lorem Ipsum dolor sit amet<br>
+        <strong>Tipo de demanda:</strong> Lorem Ipsum dolor sit amet<br>
+        <strong>Prioridade:</strong> Lorem Ipsum dolor sit amet<br>
+        <strong>Título:</strong> Lorem Ipsum dolor sit amet<br>
+        <strong>Descrição:</strong> Lorem Ipsum dolor sit amet
+      </td>
+    </tr>
+
+    <!-- RODAPÉ -->
+    <tr>
+      <td align="center" colspan="2" style="padding:7px;">
+        <img src="https://raw.githubusercontent.com/JP-1077/Repositorio-Front-End/refs/heads/main/Flooter.png" alt="Portal Polaris" width="595" style="display:block;">
+      </td>
+    </tr>
+
+  </table>
+
+</body>
+</html>
