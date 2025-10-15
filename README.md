@@ -22,3 +22,12 @@ Desenvolver uma aplicação que permita:
  
 ## ⚙ Tecnologias Utilizadas
 
+A seguir estão as principais tecnologias, frameworks e bibliotecas utilizadas no desenvolvimento de sistema:
+
+| Núcleo        | Tecnologia       |                                  
+|------------------|----------------
+| Back - end               | JSON, Python, SQL e APIs (via Power Automate)    
+| Front - End            | HTML e CSS           
+| Banco de Dados        | SQL Server               
+| Versionamento     | Git e GitHub         
+| Documentação   | Markdown
