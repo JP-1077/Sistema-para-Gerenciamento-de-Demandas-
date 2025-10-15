@@ -1,0 +1,32 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.4",
+    "body": [
+      {
+        "type": "TextBlock",
+        "text": "Conclusão de Demandas",
+        "size": "Large",
+        "weight": "Bolder",
+        "color": "Accent"
+      },
+      {
+        "type": "TextBlock",
+        "text": "Olá! Equipe MIS",
+        "weight": "Bolder",
+        "color": "Accent",
+        "wrap": true
+      },
+      {
+        "type": "TextBlock",
+        "text": " ✅ Uma Nova Demanda foi Concluída ✅",
+        "weight": "Bolder",
+        "color": "Attention",
+        "wrap": true
+      }
+
+    ]
+
+    
+
+}

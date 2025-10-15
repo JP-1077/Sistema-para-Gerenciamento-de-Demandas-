@@ -1,0 +1,89 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.4",
+    "body": [
+      {
+        "type": "TextBlock",
+        "text": "Informativo de Nova Requisição",
+        "size": "Large",
+        "weight": "Bolder",
+        "color": "Accent"
+      },
+      {
+        "type": "TextBlock",
+        "text": "Olá! Equipe MIS",
+        "weight": "Bolder",
+        "color": "Accent",
+        "wrap": true
+      },
+      {
+        "type": "TextBlock",
+        "text": " 🚨 Uma Nova Demanda foi Registrada 🚨",
+        "weight": "Bolder",
+        "color": "Attention",
+        "wrap": true
+      },
+      {
+        "type": "TextBlock",
+        "text": "Uma nova solicitação chegou e já está na fila de triagem.\nDesta forma, a nossa próxima etapa é avaliar as informações recebidas para compreendermos o pedido e encontrar a melhor solução.",
+        "wrap": true
+      },
+      {
+        "type": "FactSet",
+        "facts": [
+          {
+            "title": "ID da Solicitação",
+            "value": "valor"
+          }
+        ]
+      },
+      {
+        "type": "TextBlock",
+        "text": "Resumo da Solicitação",
+        "size": "Medium",
+        "weight": "Bolder",
+        "color": "Accent",
+        "wrap": true
+      },
+      {
+        "type": "TextBlock",
+        "text": "Principais detalhes registrados no sistema:",
+        "wrap": true
+      },
+      {
+        "type": "FactSet",
+        "facts": [
+          {
+            "title": "Nome do Solicitante:",
+            "value": "(Nome)"
+          },
+          {
+            "title": "Grupo da Demanda:",
+            "value": "(Grupo)"
+          },
+          {
+            "title": "Tipo da Demanda:",
+            "value": "(Tipo)"
+          },
+          {
+            "title": "Prioridade:",
+            "value": "(Prioridade)"
+          }
+        ]
+      },
+      {
+        "type": "ActionSet",
+        "actions": [
+          {
+            "type": "Action.OpenUrl",
+            "title": "Clique aqui para acessar a demanda via Planner",
+            "url": "https://planner.cloud.microsoft/webui/plan/SElh4-Z0t0OPAr0cldLW0WQAD_6x/view/board?tid=57b8c96e-ac2f-4d78-a149-f1fc6817d3c4"
+          }
+        ]
+      }
+    ]
+  }
+
+
+  
