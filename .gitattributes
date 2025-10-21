@@ -1,7 +1,8 @@
+# Força o GitHub a reconhecer as linguagens
+*.css linguist-language=CSS
+*.py linguist-language=Python
+*.js linguist-language=JavaScript
+*.ps1 linguist-language=PowerShell
+*.json linguist-language=JSON
 *.sql linguist-language=TSQL
 
-*.css text eol=lf diff=css
-
-*.py text eol=lf diff=python
-
-*.js text eol=lf diff=javascript
